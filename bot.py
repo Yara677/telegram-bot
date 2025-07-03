@@ -1,25 +1,27 @@
-import os
 from telegram import Update
-from telegram.ext import Application, CommandHandler, MessageHandler, ContextTypes, filters
+from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
+import os
 
-ADMIN_CHAT_IDS = [648120374, 8191795574]
 BOT_TOKEN = os.getenv("7726733596:AAGZf8oPUoYuCpz712W8DgQIgnlSEWER6ZM")
 WEBHOOK_DOMAIN = os.getenv("https://telegram-bot-mi46.onrender.com")
+
 WEBHOOK_PATH = f"/{BOT_TOKEN}"
 WEBHOOK_URL = f"{WEBHOOK_DOMAIN}{WEBHOOK_PATH}"
 
+ADMIN_CHAT_IDS = [648120374, 8191795574]
 user_ids = {}
 
+# Команда /start
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     user_ids[user.id] = user.username
     await update.message.reply_markdown(
-        f"Здравствуй, {user.first_name}! Это бот канала *Хижина Шамана*
-\n"
+        f"Здравствуй, {user.first_name}! Это бот канала *Хижина Шамана*\n\n"
         "Здесь вы можете задать любой интересующий вас вопрос. "
         "Я отвечу на него здесь или разберу подробно в рубрике \"Ответы на вопросы\" 🌱"
     )
 
+# Обработка входящих сообщений
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     message = update.message.text
@@ -39,6 +41,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "Благодарю за обращение! Постараюсь ответить в ближайшее время.\n\nС любовью,\nЯра ♥️"
     )
 
+# Команда /reply для админов
 async def reply(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id not in ADMIN_CHAT_IDS:
         await update.message.reply_text("⛔️ У вас нет доступа к этой команде.")
@@ -52,15 +55,18 @@ async def reply(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except Exception as e:
         await update.message.reply_text(f"❌ Ошибка: {e}")
 
+# Запуск бота (WEBHOOK)
 if __name__ == '__main__':
-    app = Application.builder().token(BOT_TOKEN).build()
+    app = ApplicationBuilder().token(BOT_TOKEN).build()
 
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("reply", reply))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
+    print("Бот запущен по webhook...")
+
     app.run_webhook(
         listen="0.0.0.0",
-        port=int(os.getenv("PORT", 10000)),
+        port=int(os.environ.get("PORT", 10000)),
         webhook_url=WEBHOOK_URL
     )
